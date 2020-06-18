@@ -74,6 +74,9 @@ class App extends Component {
 
   inputChange = (e) => {
     let { name, value } = e.target;
+    this.setState({
+      [name]: value
+  });
   };
 
   remove = (i) => {
@@ -115,6 +118,65 @@ class App extends Component {
     return `${n} @${dt[1]}`;
   };
 
+  taskDone=(i)=>{
+    let {doneTasks,tasks} = this.state;
+    doneTasks.push(tasks[i]);
+    tasks.splice(i,1);
+    this.setState({doneTasks, tasks});
+  }
+
+  removeDone=(i)=>{
+    let {doneTasks} = this.state;
+    doneTasks.splice(i,1);
+    this.setState({doneTasks});
+  }
+
+  unDone=(i)=>{
+    let {doneTasks, tasks} = this.state;
+    tasks.push(doneTasks[i]);
+    this.removeDone(i);
+  }
+
+  tasksToFav=(i,id)=>{
+    let {tasks, favTasks} = this.state;
+    if(tasks[i].fav === false){
+        tasks[i].fav = true;
+        favTasks.push(tasks[i]);
+    }else{
+        tasks[i].fav = false;
+        favTasks.splice(favTasks.findIndex(e => e.id === id),1);
+    }
+    this.setState({favTasks,tasks});
+  }
+
+  doneToFav=(i,id)=>{
+    let {doneTasks, favTasks} = this.state;
+    if(doneTasks[i].fav === false){
+        doneTasks[i].fav = true;
+        favTasks.push(doneTasks[i]);
+    }else{
+        doneTasks[i].fav = false;
+        favTasks.splice(favTasks.findIndex(e => e.id === id),1);
+    }
+    this.setState({favTasks,doneTasks});
+  }
+
+  removeFav=(i,id)=>{
+    let {favTasks, tasks, doneTasks} = this.state;
+    favTasks.splice(i,1);
+    try {
+        tasks[tasks.findIndex(e => e.id === id)].fav = false;
+    } catch (error) {
+        console.log('not found in tasks');
+    }
+    try {
+        doneTasks[doneTasks.findIndex(e => e.id === id)].fav = false;
+    } catch (error) {
+        console.log('not found in tasksDone');
+    }
+    this.setState({favTasks,tasks,doneTasks});
+  }
+
   render() {
     let { tasks, doneTasks, favTasks, renderTasks, modalTaskForm, modalTaskForm_Toggle, title, detail, time, navActive} = this.state;
     return (
@@ -122,23 +184,13 @@ class App extends Component {
         <div className="container" style={{ paddingTop: 60 }}>
           <div className="field has-addons">
             <p className="control">
-              <a
-                className="button is-link is-rounded" onClick={()=>this.modalTaskForm(!modalTaskForm)}
-              >
-                <span className="icon">
-                  <i className="fa fa-plus"></i>
-                </span>
-                <span>New</span>
+              <a className="button is-link is-rounded" onClick={()=>this.modalTaskForm(!modalTaskForm)}>
+                <span className="icon"><i className="fa fa-plus"></i></span><span>New</span>
               </a>
             </p>
             <p className="control">
-              <a className={`button is-link is-rounded ${navActive==='tasks'?'is-outlined':''}`}
-               onClick={()=>{
-                this.setState({
-                    renderTasks:1,
-                    navActive: 'tasks'
-                });
-            }}>
+              <a className={`button is-link is-rounded ${navActive==='tasks'?'is-outlined':''}`} 
+              onClick={()=>{this.setState({renderTasks:1,navActive: 'tasks'});}}>
                 <span className="icon">
                   <i className="fa fa-tasks"></i>
                 </span>
@@ -147,12 +199,7 @@ class App extends Component {
             </p>
             <p className="control">
               <a className={`button is-link is-rounded ${navActive==='done'?'is-outlined':''}`}
-              onClick={()=>{
-                this.setState({
-                    renderTasks: 2,
-                    navActive: 'done'
-                });
-            }}>
+              onClick={()=>{ this.setState({renderTasks: 2,navActive: 'done'});}}>
                 <span className="icon">
                   <i className="fa fa-check"></i>
                 </span>
@@ -161,16 +208,11 @@ class App extends Component {
             </p>
             <p className="control">
               <a className={`button is-link is-rounded ${navActive==='fav'?'is-outlined':''}`}
-              onClick={()=>{
-                this.setState({
-                    renderTasks: 3,
-                    navActive: 'fav'
-                });
-            }}>
+              onClick={()=>{this.setState({renderTasks: 3,navActive: 'fav'});}}>
                 <span className="icon">
                   <i className="fa fa-heart"></i>
                 </span>
-                <span>Done ( {favTasks.length} )</span>
+                <span>Favorite ( {favTasks.length} )</span>
               </a>
             </p>
           </div>
@@ -179,6 +221,70 @@ class App extends Component {
 
             {renderTasks === 1 &&
             tasks.map((data, i) =>
+            <article className="media" key={i}>
+  <div className="media-content">
+    <div className="content">
+      <p>
+        <strong>{data.title}</strong>
+        <br/>
+            <small>{this.viewDateTime(data.time)}</small>
+            <br/>
+        {data.detail}
+      </p>
+    </div>
+    <nav className="level is-mobile">
+      <div className="level-left">
+        <a className="level-item" onClick={()=> this.taskDone(i)}>
+          <span className="icon is-small"><i className="fa fa-check"></i></span>
+        </a>
+        <a className="level-item" onClick={()=> this.edit(i)}>
+          <span className="icon is-small"><i className="fa fa-pencil"></i></span>
+        </a>
+        <a className="level-item" onClick={()=> this.tasksToFav(i,data.id)}>
+          <span className={`icon ${data.fav===true?'has-text-danger':''}`}><i className="fa fa-heart"></i></span>
+        </a>
+      </div>
+    </nav>
+  </div>
+  <div className="media-right">
+    <button className="delete" onClick={()=> this.remove(i)}></button>
+  </div>
+</article>
+            )}
+
+
+            {renderTasks === 2 &&
+            doneTasks.map((data, i) =>
+            <article className="media" key={i}>
+  <div className="media-content">
+    <div className="content">
+      <p>
+        <strong>{data.title}</strong>
+        <br/>
+            <small>{this.viewDateTime(data.time)}</small>
+            <br/>
+        {data.detail}
+      </p>
+    </div>
+    <nav className="level is-mobile">
+      <div className="level-left">
+        <a className="level-item" onClick={()=> this.unDone(i)}>
+          <span className="icon is-small"><i className="fa fa-undo"></i></span>
+        </a>
+        <a className="level-item" onClick={()=> this.doneToFav(i,data.id)}>
+          <span className={`icon ${data.fav===true?'has-text-danger':''}`}><i className="fa fa-heart"></i></span>
+        </a>
+      </div>
+    </nav>
+  </div>
+  <div className="media-right">
+    <button className="delete" onClick={()=> this.remove(i)}></button>
+  </div>
+</article>)}
+
+
+            {renderTasks === 3 &&
+            favTasks.map((data, i) =>
             <div className="columns" key={i}>
                 <div className="column is-12">
                     <article className="media">
@@ -192,38 +298,16 @@ class App extends Component {
                                 {data.detail}
                             </p>
                             </div>
-                            <nav className="level is-mobile">
-                                <div className="level-left">
-                                    <a className="level-item"
-                                        onClick={()=>this.taskDone(i)}
-                                    >
-                                        <span className="icon"><i className="fa fa-lg fa-check"></i></span>
-                                    </a>
-                                    <a className="level-item"
-                                        onClick={()=>this.tasksToFav(i, data.id)}
-                                    >
-                                        <span className={`icon ${data.fav===true?'has-text-danger':''}`}><i className="fa fa-lg fa-heart"></i></span>
-                                    </a>
-                                    <a className="level-item"
-                                        onClick={()=>this.Edit(i)}
-                                    >
-                                        <span className="icon"><i className="fa fa-lg fa-pencil-alt"></i></span>
-                                    </a>
-                                </div>
-                            </nav>
                         </div>
                         <div className="media-right">
                             <button className="delete"
-                                onClick={()=>this.Remove(i)}
+                                onClick={()=>this.removeFav(i, data.id)}
                             ></button>
                         </div>
                     </article>
                 </div>
-            </div>)}
-
-
-            {renderTasks === 2 && <span>List Tasks Done</span>}
-            {renderTasks === 3 && <span>List Tasks Favour</span>}
+            </div>)
+            }
           </div>
         </div>
 
@@ -246,7 +330,7 @@ class App extends Component {
                 <div className="field">
                     <label className="label" style={{color:'#fff'}}>Date and Time</label>
                     <div className="control">
-                        <input name='time' className="input" type="datetime-local" placeholder="Date and Time" value={detail} onChange={(e) => this.inputChange(e)}/>
+                        <input name='time' className="input" type="datetime-local" placeholder="Date and Time" value={time} onChange={(e) => this.inputChange(e)}/>
                     </div>
                 </div>
                 <button className='button is-info' onClick={(e)=> this.submitTask(e)}>SAVE</button>
